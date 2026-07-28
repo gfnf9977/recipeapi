@@ -1,0 +1,11 @@
+# .NET build temp files
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# Database
+*.db
+*.db-journal
