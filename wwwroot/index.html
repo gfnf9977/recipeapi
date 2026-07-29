@@ -111,16 +111,16 @@
             <p class="text-gray-500 text-sm mb-5">Хочеш додати фото свого кулінарного шедевра?</p>
 
             <div class="mb-5">
-                <label class="block text-sm font-bold text-gray-700 mb-2">Посилання на твоє фото (опціонально)</label>
-                <input type="text" id="user-photo-url" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block p-3" placeholder="https://...">
+                <label class="block text-sm font-bold text-gray-700 mb-2">Обери фото (опціонально)</label>
+                <input type="file" id="user-photo-file" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer transition-colors">
             </div>
 
             <div class="flex gap-3">
-                <button onclick="closePhotoModal()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors">
+                <button id="cancel-photo-btn" onclick="closePhotoModal()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors">
                     Не зараз
                 </button>
-                <button onclick="submitCookedStatus()" class="flex-1 bg-green-500 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-green-200 hover:bg-green-600 hover:shadow-lg transition-all">
-                    Зберегти
+                <button id="save-photo-btn" onclick="submitCookedStatus()" class="flex-1 bg-green-500 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-green-200 hover:bg-green-600 hover:shadow-lg transition-all flex justify-center items-center">
+                    <span>Зберегти</span>
                 </button>
             </div>
         </div>
@@ -129,6 +129,7 @@
 
     <script>
         let state = { id: null, photoUrl: '', ingredients: [], videos: [], steps: [], tips: [] };
+const IMGBB_API_KEY = '2eb318058608a823ca7fd957d4bace9e';
 let currentCookingRecipeId = null;
 
         function showToast(message, type = 'success') {
@@ -453,14 +454,49 @@ let currentCookingRecipeId = null;
 
 function closePhotoModal() {
     document.getElementById('photo-modal').classList.add('hidden');
-    document.getElementById('user-photo-url').value = '';
+    document.getElementById('user-photo-file').value = '';
     currentCookingRecipeId = null;
 }
 
 async function submitCookedStatus() {
-    const photoUrl = document.getElementById('user-photo-url').value.trim();
-    await updateCookStatus(currentCookingRecipeId, true, photoUrl);
-    closePhotoModal();
+    const fileInput = document.getElementById('user-photo-file');
+    const saveBtn = document.getElementById('save-photo-btn');
+    const cancelBtn = document.getElementById('cancel-photo-btn');
+    let photoUrl = null;
+
+    saveBtn.disabled = true;
+    cancelBtn.disabled = true;
+    saveBtn.innerHTML = `<span class="animate-pulse">Завантаження...</span>`;
+
+    try {
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const imgbbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const imgbbData = await imgbbResponse.json();
+            if (imgbbData.success) {
+                photoUrl = imgbbData.data.url;
+            } else {
+                alert("Не вдалося завантажити фото на хмару.");
+            }
+        }
+
+        await updateCookStatus(currentCookingRecipeId, true, photoUrl);
+        closePhotoModal();
+    } catch (error) {
+        console.error("Помилка:", error);
+        alert("Сталася помилка при збереженні.");
+    } finally {
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+        saveBtn.innerHTML = `<span>Зберегти</span>`;
+    }
 }
 
 async function updateCookStatus(id, isCooked, photoUrl) {
