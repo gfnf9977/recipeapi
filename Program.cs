@@ -10,7 +10,7 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("post
 {
     var databaseUri = new Uri(connectionString);
     var userInfo = databaseUri.UserInfo.Split(':');
-    
+
     var connBuilder = new Npgsql.NpgsqlConnectionStringBuilder
     {
         Host = databaseUri.Host,
@@ -18,7 +18,7 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("post
         Username = userInfo[0],
         Password = userInfo[1],
         Database = databaseUri.LocalPath.TrimStart('/'),
-        SslMode = Npgsql.SslMode.Prefer 
+        SslMode = Npgsql.SslMode.Prefer
     };
     connectionString = connBuilder.ToString();
 }
@@ -31,7 +31,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated(); 
+    db.Database.EnsureCreated();
 }
 
 app.UseDefaultFiles();
@@ -106,6 +106,18 @@ app.MapPut("/api/recipes/{id}", async (int id, AppDbContext db, Recipe updatedRe
     return Results.Ok(recipe);
 });
 
+app.MapPut("/api/recipes/{id}/cook", async (int id, CookToggleRequest req, AppDbContext db) =>
+{
+    var recipe = await db.Recipes.FindAsync(id);
+    if (recipe == null) return Results.NotFound();
+
+    recipe.IsCooked = req.IsCooked;
+    recipe.UserPhotoUrl = req.UserPhotoUrl;
+
+    await db.SaveChangesAsync();
+    return Results.Ok(recipe);
+});
+
 app.MapDelete("/api/recipes/{id}", async (int id, AppDbContext db) =>
 {
     var recipe = await db.Recipes.FindAsync(id);
@@ -160,4 +172,10 @@ async Task<string?> FetchThumbnailAsync(string url)
     {
     }
     return null;
+}
+
+public class CookToggleRequest
+{
+    public bool IsCooked { get; set; }
+    public string? UserPhotoUrl { get; set; }
 }

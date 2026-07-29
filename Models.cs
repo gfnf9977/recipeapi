@@ -11,6 +11,8 @@ public class Recipe
     public List<VideoLink> VideoLinks { get; set; } = new();
     public List<RecipeStep> Steps { get; set; } = new();
     public List<RecipeTip> Tips { get; set; } = new();
+    public bool IsCooked { get; set; } = false; 
+    public string? UserPhotoUrl { get; set; }   
 }
 
 public class Ingredient
