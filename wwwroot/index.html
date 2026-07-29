@@ -127,6 +127,15 @@
     </div>
 </div>
 
+<div id="fullscreen-image-modal" class="hidden fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity" onclick="closeFullscreenImage()">
+
+    <button class="absolute top-4 right-4 md:top-6 md:right-6 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full w-12 h-12 flex items-center justify-center text-2xl transition-all" onclick="closeFullscreenImage()">
+        ✕
+    </button>
+
+    <img id="fullscreen-image" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl" onclick="event.stopPropagation()">
+</div>
+
     <script>
         let state = { id: null, photoUrl: '', ingredients: [], videos: [], steps: [], tips: [] };
 const IMGBB_API_KEY = '2eb318058608a823ca7fd957d4bace9e';
@@ -390,7 +399,7 @@ let currentCookingRecipeId = null;
                     ${r.userPhotoUrl ?
                     `<div class="mt-5 p-2 bg-gray-50 rounded-2xl border border-gray-100">
                         <h4 class="text-xs font-bold text-gray-400 uppercase mb-2 ml-2 tracking-wider flex items-center gap-2"><span>📸</span> Моє приготування</h4>
-                        <img src="${r.userPhotoUrl}" class="w-full h-48 object-cover rounded-xl shadow-sm">
+                        <img src="${r.userPhotoUrl}" onclick="openFullscreenImage('${r.userPhotoUrl}')" class="w-full h-48 object-cover rounded-xl shadow-sm cursor-pointer">
                     </div>` : ''}
                 </div>
             </div>
@@ -516,6 +525,24 @@ async function updateCookStatus(id, isCooked, photoUrl) {
     } catch (error) {
         console.error("Помилка оновлення статусу:", error);
     }
+}
+
+function openFullscreenImage(url) {
+    const modal = document.getElementById('fullscreen-image-modal');
+    const img = document.getElementById('fullscreen-image');
+
+    img.src = url;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeFullscreenImage() {
+    const modal = document.getElementById('fullscreen-image-modal');
+    const img = document.getElementById('fullscreen-image');
+
+    modal.classList.add('hidden');
+    img.src = '';
+    document.body.style.overflow = '';
 }
 
         loadRecipes();
