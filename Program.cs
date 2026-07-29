@@ -4,9 +4,9 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")?.Trim();
 
-if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres://"))
+if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres"))
 {
     var databaseUri = new Uri(connectionString);
     var userInfo = databaseUri.UserInfo.Split(':');
@@ -18,7 +18,7 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("post
         Username = userInfo[0],
         Password = userInfo[1],
         Database = databaseUri.LocalPath.TrimStart('/'),
-        SslMode = Npgsql.SslMode.Prefer
+        SslMode = Npgsql.SslMode.Prefer 
     };
     connectionString = connBuilder.ToString();
 }
