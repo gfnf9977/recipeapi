@@ -3,8 +3,19 @@ using RecipeApi;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<AppDbContext>();
+
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated(); 
+}
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
