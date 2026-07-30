@@ -87,6 +87,16 @@ app.MapPut("/api/recipes/{id}", async (int id, AppDbContext db, Recipe updatedRe
     recipe.Title = updatedRecipe.Title;
     recipe.PhotoUrl = updatedRecipe.PhotoUrl;
 
+    foreach (var newVid in updatedRecipe.VideoLinks)
+    {
+        var oldVid = recipe.VideoLinks.FirstOrDefault(v => v.Url == newVid.Url);
+        if (oldVid != null)
+        {
+            newVid.IsTried = oldVid.IsTried;
+            newVid.Notes = oldVid.Notes;
+        }
+    }
+
     db.Ingredients.RemoveRange(recipe.Ingredients);
     db.VideoLinks.RemoveRange(recipe.VideoLinks);
     db.Steps.RemoveRange(recipe.Steps);
@@ -116,6 +126,18 @@ app.MapPut("/api/recipes/{id}/cook", async (int id, CookToggleRequest req, AppDb
 
     await db.SaveChangesAsync();
     return Results.Ok(recipe);
+});
+
+app.MapPut("/api/videos/{id}", async (int id, VideoUpdateRequest req, AppDbContext db) =>
+{
+    var video = await db.VideoLinks.FindAsync(id);
+    if (video == null) return Results.NotFound();
+
+    video.IsTried = req.IsTried;
+    video.Notes = req.Notes;
+
+    await db.SaveChangesAsync();
+    return Results.Ok();
 });
 
 app.MapDelete("/api/recipes/{id}", async (int id, AppDbContext db) =>
@@ -178,4 +200,10 @@ public class CookToggleRequest
 {
     public bool IsCooked { get; set; }
     public string? UserPhotoUrl { get; set; }
+}
+
+public class VideoUpdateRequest
+{
+    public bool IsTried { get; set; }
+    public string? Notes { get; set; }
 }

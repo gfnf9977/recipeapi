@@ -136,10 +136,26 @@
     <img id="fullscreen-image" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl" onclick="event.stopPropagation()">
 </div>
 
+<div id="video-notes-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-opacity">
+    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Особливості варіанту</h3>
+        <p class="text-gray-500 text-sm mb-4">Запиши, чим це відео відрізняється від інших.</p>
+
+        <textarea id="video-notes-input" rows="3" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block p-3 mb-5" placeholder="Наприклад: тут автор додає вершки замість молока..."></textarea>
+
+        <div class="flex gap-3">
+            <button onclick="closeVideoNotesModal()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors">Закрити</button>
+            <button onclick="saveVideoNotes()" class="flex-1 bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl hover:bg-indigo-600 transition-colors shadow-md">Зберегти</button>
+        </div>
+    </div>
+</div>
+
     <script>
         let state = { id: null, photoUrl: '', ingredients: [], videos: [], steps: [], tips: [] };
 const IMGBB_API_KEY = '2eb318058608a823ca7fd957d4bace9e';
 let currentCookingRecipeId = null;
+let currentEditingVideoId = null;
+let currentVideoIsTried = false;
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -380,18 +396,31 @@ let currentCookingRecipeId = null;
 
                         <div class="grid grid-cols-2 gap-3">
                             ${r.videoLinks.map(v =>
-                                `<a href="${v.url}" target="_blank" class="relative block h-24 rounded-xl overflow-hidden group shadow-sm bg-gray-100 flex justify-center items-center border border-gray-100">
+                                `<div class="flex flex-col gap-1.5">
+    <div class="relative group">
+        <a href="${v.url}" target="_blank" class="relative block h-24 rounded-xl overflow-hidden shadow-sm bg-gray-100 flex justify-center items-center border border-gray-100">
+            ${v.thumbnailUrl
+                ? `<img src="${v.thumbnailUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">`
+                : `<span class="text-xs text-gray-400">Відкрити джерело</span>`}
 
-                                    ${v.thumbnailUrl
-                                        ? `<img src="${v.thumbnailUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">`
-                                        : `<span class="text-xs text-gray-400">Відкрити джерело</span>`}
+            <div class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <div class="bg-white/95 text-indigo-600 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform backdrop-blur-sm">
+                    <span class="text-lg ml-1 leading-none">▶</span>
+                </div>
+            </div>
+        </a>
 
-                                    <div class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                        <div class="bg-white/95 text-indigo-600 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform backdrop-blur-sm">
-                                            <span class="text-lg ml-1 leading-none">▶</span>
-                                        </div>
-                                    </div>
-                                </a>
+        <button onclick="toggleVideoTried(${v.id}, ${v.isTried}, '${v.notes ? v.notes.replace(/'/g, "\\'") : ''}')" class="absolute top-1 left-1 z-10 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all ${v.isTried ? 'bg-green-500 text-white' : 'bg-white/90 text-gray-400 hover:bg-white'}">
+            ${v.isTried ? '✓' : '○'}
+        </button>
+
+        <button onclick="openVideoNotesModal(${v.id}, ${v.isTried}, '${v.notes ? v.notes.replace(/'/g, "\\'") : ''}')" class="absolute top-1 right-1 z-10 w-7 h-7 rounded-full bg-white/90 text-indigo-500 hover:bg-white flex items-center justify-center shadow-md transition-all font-serif italic font-bold text-sm">
+            i
+        </button>
+    </div>
+
+    ${v.notes ? `<div class="text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border border-gray-100 italic line-clamp-3" title="${v.notes}">📝 ${v.notes}</div>` : ''}
+</div>
                             `).join('')}
                         </div>
                     </div>` : ''}
@@ -543,6 +572,48 @@ function closeFullscreenImage() {
     modal.classList.add('hidden');
     img.src = '';
     document.body.style.overflow = '';
+}
+
+async function toggleVideoTried(videoId, isTried, notes) {
+    await updateVideoData(videoId, !isTried, notes);
+}
+
+function openVideoNotesModal(videoId, isTried, currentNotes) {
+    currentEditingVideoId = videoId;
+    currentVideoIsTried = isTried;
+
+    document.getElementById('video-notes-input').value = (currentNotes && currentNotes !== 'null') ? currentNotes : '';
+    document.getElementById('video-notes-modal').classList.remove('hidden');
+}
+
+function closeVideoNotesModal() {
+    document.getElementById('video-notes-modal').classList.add('hidden');
+    currentEditingVideoId = null;
+}
+
+async function saveVideoNotes() {
+    const notes = document.getElementById('video-notes-input').value.trim();
+    await updateVideoData(currentEditingVideoId, currentVideoIsTried, notes);
+    closeVideoNotesModal();
+}
+
+async function updateVideoData(id, isTried, notes) {
+    try {
+        const response = await fetch(`/api/videos/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                isTried: isTried,
+                notes: notes || null
+            })
+        });
+
+        if (response.ok) {
+            loadRecipes();
+        }
+    } catch (error) {
+        console.error("Помилка збереження відео:", error);
+    }
 }
 
         loadRecipes();

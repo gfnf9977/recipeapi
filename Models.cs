@@ -29,6 +29,8 @@ public class VideoLink
     public int RecipeId { get; set; }
     public string Url { get; set; } = string.Empty;
     public string? ThumbnailUrl { get; set; }
+    public bool IsTried { get; set; } = false;
+    public string? Notes { get; set; }
 }
 
 public class RecipeStep
