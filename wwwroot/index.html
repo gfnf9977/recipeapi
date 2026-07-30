@@ -427,7 +427,8 @@ function renderRecipes(recipesToRender) {
                                         ${v.isTried ? '✓' : '○'}
                                     </button>
 
-                                    <button onclick="openVideoNotesModal(${v.id}, ${v.isTried}, '${v.notes ? v.notes.replace(/'/g, "\\'") : ''}')" class="absolute top-1 right-1 z-10 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all font-serif italic font-bold text-sm ${v.notes ? 'bg-indigo-500 text-white ring-2 ring-indigo-200' : 'bg-white/90 text-gray-400 hover:bg-white hover:text-indigo-500'}>
+                                    <!-- ТУТ ВИПРАВЛЕНО ЗАКРИВАЮЧУ ЛАПКУ В КІНЦІ КЛАСУ -->
+                                    <button onclick="openVideoNotesModal(${v.id}, ${v.isTried}, '${v.notes ? v.notes.replace(/'/g, "\\'") : ''}')" class="absolute top-1 right-1 z-10 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all font-serif italic font-bold text-sm ${v.notes ? 'bg-indigo-500 text-white ring-2 ring-indigo-200' : 'bg-white/90 text-gray-400 hover:bg-white hover:text-indigo-500'}">
                                         i
                                     </button>
                                 </div>
